@@ -1,0 +1,17 @@
+# Datasets grandes
+data/
+deepfashion2/
+
+# Entorno virtual
+.venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDEs
+.idea/
+.vscode/
+
+output/*.pkl

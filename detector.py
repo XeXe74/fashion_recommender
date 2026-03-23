@@ -1,0 +1,55 @@
+from ultralytics import YOLO
+from PIL import Image
+import os
+
+# Load our fine-tuned fashion model (after training)
+# During development, use the generic model for testing
+model = YOLO("runs/detect/runs/fashion_detector/weights/best.pt")
+
+def detect_and_crop(image_path, output_folder="data/output/crops"):
+    """
+    Receives a full-body outfit photo path.
+    Detects clothing items, crops them and saves to output_folder.
+    Returns a list of dicts with crop path and detected label.
+    """
+    os.makedirs(output_folder, exist_ok=True)
+
+    image = Image.open(image_path)
+    results = model(image_path)
+
+    crops = []
+    for i, box in enumerate(results[0].boxes):
+        # Get bounding box coordinates
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+        # Crop the detected clothing item
+        crop = image.crop((x1, y1, x2, y2))
+
+        # Get label and confidence score
+        label = model.names[int(box.cls[0])]
+        confidence = float(box.conf[0])
+
+        # Only keep high confidence detections
+        if confidence < 0.4:
+            continue
+
+        crop_path = os.path.join(output_folder, f"crop_{i}_{label}.jpg")
+        crop.save(crop_path)
+
+        crops.append({
+            "path": crop_path,
+            "label": label,
+            "confidence": round(confidence, 2)
+        })
+
+        print(f"Detected: {label} ({confidence:.0%}) -> saved at {crop_path}")
+
+    print(f"\nTotal clothing items detected: {len(crops)}")
+    return crops
+
+
+# TEST
+if __name__ == "__main__":
+    crops = detect_and_crop("data/input_outfits/outfit_2.jpg")
+    for crop in crops:
+        print(crop)
