@@ -6,9 +6,11 @@ import pickle
 import os
 import open_clip
 
+# Set device for PyTorch (GPU if available, otherwise CPU)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {DEVICE}")
 
+# Define category mapping for filtering recommendations
 CATEGORY_MAP = {
     "trousers": ["Pants", "Jeans", "Skinny Jeans", "Straight Leg Jeans",
                  "Wide Leg Jeans", "Flared Jeans", "Bootcut Jeans",
@@ -29,15 +31,23 @@ CATEGORY_MAP = {
 
 
 def load_model():
+    """
+    Load the OpenCLIP model and its corresponding preprocessing transforms.
+    """
+    # Load the ViT-B-32 model pre-trained by OpenAI
     model, _, preprocess = open_clip.create_model_and_transforms(
         "ViT-B-32", pretrained="openai"
     )
-    model.eval()
+    model.eval() # Set model to evaluation mode
     model.to(DEVICE)
     return model, preprocess
 
 
 def get_embedding(image: Image.Image, model, preprocess) -> np.ndarray:
+    """
+    Get the normalized embedding vector for a given image using the provided model and preprocessing.
+    """
+    # Preprocess the image and add batch dimension
     img_tensor = preprocess(image.convert("RGB")).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         embedding = model.encode_image(img_tensor).squeeze().cpu().numpy()
@@ -45,8 +55,13 @@ def get_embedding(image: Image.Image, model, preprocess) -> np.ndarray:
 
 
 def build_catalog_embeddings(catalog_path: str, save_path: str = "output/catalog_embeddings.pkl", batch_size: int = 64):
+    """
+    Build a catalog of image embeddings from the Polyvore dataset and save it as a pickle file.
+    """
+    # Ensure the output directory exists
     os.makedirs("output", exist_ok=True)
 
+    # Load the dataset and the CLIP model
     print("Loading Polyvore dataset...")
     ds = load_from_disk(catalog_path)
     model, preprocess = load_model()
@@ -54,17 +69,21 @@ def build_catalog_embeddings(catalog_path: str, save_path: str = "output/catalog
     embeddings = []
     metadata = []
 
+    # Process the dataset in batches
     for i in range(0, len(ds), batch_size):
         batch = ds[i:i + batch_size]
         images = [img.convert("RGB") for img in batch["image"]]
         tensors = torch.stack([preprocess(img) for img in images]).to(DEVICE)
 
+        # Get embeddings for the batch without computing gradients
         with torch.no_grad():
             batch_emb = model.encode_image(tensors).cpu().numpy()
 
+        # Normalize the embeddings to unit length
         norms = np.linalg.norm(batch_emb, axis=1, keepdims=True)
         batch_emb = batch_emb / norms
 
+        # Append the batch embeddings and corresponding metadata
         embeddings.append(batch_emb)
         for j in range(len(images)):
             metadata.append({
@@ -74,9 +93,11 @@ def build_catalog_embeddings(catalog_path: str, save_path: str = "output/catalog
                 "price": round(float(np.random.uniform(*_get_price_range(batch["category"][j]))), 2)
             })
 
+        # Print progress every 5000 items
         if i % 5000 == 0:
             print(f"  Processed {i}/{len(ds)} items...")
 
+    # Combine all batch embeddings into a single array and save the catalog as a pickle file
     catalog = {
         "embeddings": np.vstack(embeddings),
         "metadata": metadata
@@ -86,7 +107,7 @@ def build_catalog_embeddings(catalog_path: str, save_path: str = "output/catalog
     print(f"Catalog saved to {save_path}")
     return catalog
 
-
+# Define price ranges for each category to assign random prices to catalog items
 PRICE_RANGES = {
     "Pants": (20, 150), "Jeans": (30, 200), "Skinny Jeans": (30, 180),
     "Straight Leg Jeans": (30, 180), "Wide Leg Jeans": (30, 180),
@@ -108,6 +129,9 @@ DEFAULT_RANGE = (15, 200)
 
 
 def _get_price_range(category: str) -> tuple:
+    """
+    Get the price range for a given category, or return a default range if the category is not defined.
+    """
     return PRICE_RANGES.get(category, DEFAULT_RANGE)
 
 
@@ -119,12 +143,15 @@ def recommend(crop_path: str, class_name: str = None,
     # Load the CLIP model and the catalog of embeddings
     model, preprocess = load_model()
 
+    # Load the pre-computed catalog embeddings and metadata from the pickle file
     with open(catalog_path, "rb") as f:
         catalog = pickle.load(f)
 
+    # Get the embedding for the input crop image
     crop_img = Image.open(crop_path)
     crop_emb = get_embedding(crop_img, model, preprocess)
 
+    # Filter the catalog by category if class_name is provided and valid, otherwise use the full catalog
     if class_name and class_name in CATEGORY_MAP:
         valid_categories = CATEGORY_MAP[class_name]
         indices = [i for i, m in enumerate(catalog["metadata"])
@@ -134,10 +161,12 @@ def recommend(crop_path: str, class_name: str = None,
         indices = list(range(len(catalog["metadata"])))
         filtered_embeddings = catalog["embeddings"]
 
+    # Compute cosine similarities between the crop embedding and the filtered catalog embeddings
     similarities = np.dot(filtered_embeddings, crop_emb)
     top_local = np.argsort(similarities)[::-1][:top_k]
     top_indices = [indices[i] for i in top_local]
 
+    # Build the results with similarity scores and metadata for the top recommendations
     results = []
     for rank, idx in enumerate(top_indices):
         results.append({
@@ -146,7 +175,7 @@ def recommend(crop_path: str, class_name: str = None,
         })
     return results
 
-
+# TEST
 if __name__ == "__main__":
     # Rebuild catalog with CLIP embeddings
     build_catalog_embeddings("data/polyvore_outfits/data")

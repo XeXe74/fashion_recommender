@@ -7,6 +7,9 @@ from PIL import Image
 import pickle
 import os
 
+# This script is not used because the ResNet50 model does not perform well for fashion item recommendations compared to CLIP.
+# However, it can be used as a baseline for comparison or for educational purposes.
+
 # Set device for PyTorch (GPU if available, otherwise CPU)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {DEVICE}")
