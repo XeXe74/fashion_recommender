@@ -13,7 +13,7 @@ TOP_K_OUTFITS    = 3
 ALPHAS = [0.3, 0.5, 0.7, 1.0]
 TOP_KS = [10, 20, 30]
 
-def hyperparameter_search(crops):
+def hyperparameter_search(crops, user_input=""):
     """Try all (alpha, top_k) combinations and return the best config."""
     best_score = -1
     best_alpha = 0.7
@@ -29,7 +29,7 @@ def hyperparameter_search(crops):
                     candidates[crop["label"]] = c
 
             recommender.ALPHA = alpha
-            outfits = recommend_outfits(candidates, user_input="", top_k=TOP_K_OUTFITS)
+            outfits = recommend_outfits(candidates, user_input=user_input, top_k=TOP_K_OUTFITS)
 
             scores = [item["final_score"]
                       for o in outfits
@@ -68,7 +68,7 @@ def main():
 
     # Hyperparameter search
     print("\n[2/5] Running hyperparameter search...")
-    best_alpha, best_top_k = hyperparameter_search(crops)
+    best_alpha, best_top_k = hyperparameter_search(crops, user_input)
     recommender.ALPHA = best_alpha  # fix best alpha for the rest of the pipeline
 
     # Embed with best top_k
