@@ -1,5 +1,6 @@
 from datasets import load_from_disk
 
+# Script to build an index mapping item_ID to dataset index for quick lookup
 ds = load_from_disk("data/polyvore_outfits/data")
 print(f"Total items: {len(ds)}")
 

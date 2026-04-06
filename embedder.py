@@ -113,6 +113,10 @@ def _get_price_range(category: str) -> tuple:
 
 def recommend(crop_path: str, class_name: str = None,
               catalog_path: str = "output/catalog_embeddings.pkl", top_k: int = 20):
+    """
+    Recommend similar items from the catalog based on the embedding of the input crop image.
+    """
+    # Load the CLIP model and the catalog of embeddings
     model, preprocess = load_model()
 
     with open(catalog_path, "rb") as f:
