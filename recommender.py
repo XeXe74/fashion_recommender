@@ -15,7 +15,7 @@ def parse_user_input(text: str) -> dict:
 
     # Price range
     range_match = re.search(r"entre\s+(\d+)\s+y\s+(\d+)|between\s+(\d+)\s+and\s+(\d+)", text, re.IGNORECASE)
-    max_match = re.search(r"menos de\s+(\d+)|máximo\s+(\d+)|under\s+(\d+)|max\s+(\d+)", text, re.IGNORECASE)
+    max_match = re.search(r"menos de\s+(\d+)|máximo\s+(\d+)|under\s+(\d+)|max\s+(\d+)|less than\s+(\d+)", text, re.IGNORECASE)
     min_match = re.search(r"más de\s+(\d+)|mínimo\s+(\d+)|over\s+\d+|min\s+(\d+)", text, re.IGNORECASE)
 
     if range_match:
@@ -30,7 +30,7 @@ def parse_user_input(text: str) -> dict:
 
     # Extract keywords
     keywords = re.sub(
-        r"(menos de|más de|máximo|mínimo|entre|y|euros?|under|over\s+\d+|max\s+\d+|min\s+\d+|between|and|\d+)",
+        r"(menos de|más de|máximo|mínimo|entre|y|euros?|under|over\s+\d+|max\s+\d+|min\s+\d+|between|and|less than|\d+)",
         "", text, flags=re.IGNORECASE
     ).strip()
     if keywords:
