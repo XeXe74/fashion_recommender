@@ -124,7 +124,17 @@ def recommend_outfits(all_candidates: dict, user_input: str = "", top_k: int = 3
             })
         valid_outfits.sort(key=lambda x: x["outfit_score"], reverse=True)
 
-    return valid_outfits[:top_k]
+    seen_ids = set()
+    diverse_outfits = []
+    for outfit in valid_outfits:
+        item_ids = {item["item_ID"] for item in outfit["items"].values()}
+        if not item_ids & seen_ids:
+            diverse_outfits.append(outfit)
+            seen_ids.update(item_ids)
+        if len(diverse_outfits) == top_k:
+            break
+
+    return diverse_outfits if diverse_outfits else valid_outfits[:top_k]
 
 
 if __name__ == "__main__":
