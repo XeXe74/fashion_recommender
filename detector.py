@@ -2,21 +2,21 @@ from ultralytics import YOLO
 from PIL import Image
 import os
 
-# Load our fine-tuned fashion model (after training)
-# During development, use the generic model for testing
+# Load the trained YOLOv8 model for clothing detection
 model = YOLO("runs/detect/runs/fashion_detector/weights/best.pt")
 
 def detect_and_crop(image_path, output_folder="data/output/crops"):
     """
-    Receives a full-body outfit photo path.
-    Detects clothing items, crops them and saves to output_folder.
-    Returns a list of dicts with crop path and detected label.
+    Receives an image path, detects clothing items using the YOLO model, and saves cropped images of each detected item.
     """
+    # Ensure the output directory exists
     os.makedirs(output_folder, exist_ok=True)
 
+    # Load the image and run detection
     image = Image.open(image_path)
     results = model(image_path)
 
+    # Iterate over detected boxes and crop the clothing items
     crops = []
     for i, box in enumerate(results[0].boxes):
         # Get bounding box coordinates
@@ -33,9 +33,11 @@ def detect_and_crop(image_path, output_folder="data/output/crops"):
         if confidence < 0.4:
             continue
 
+        # Save the cropped image with a unique name
         crop_path = os.path.join(output_folder, f"crop_{i}_{label}.jpg")
         crop.save(crop_path)
 
+        # Append crop info to the list
         crops.append({
             "path": crop_path,
             "label": label,

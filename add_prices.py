@@ -1,8 +1,9 @@
 import pickle
 import numpy as np
 
-# NO ES NECESARIO, ERA PARA EL RESNET
+# This script is no longer useful because in the Clip implementation, prices were directly assigned during the embedding creation.
 
+# Define price ranges for each category to assign random prices to catalog items
 PRICE_RANGES = {
     "Pants": (20, 150), "Jeans": (30, 200), "Skinny Jeans": (30, 180),
     "Straight Leg Jeans": (30, 180), "Wide Leg Jeans": (30, 180),
@@ -22,6 +23,7 @@ PRICE_RANGES = {
 }
 DEFAULT_RANGE = (15, 200)
 
+# Load the existing catalog embeddings and metadata from the pickle file
 print("Loading catalog...")
 with open("output/catalog_embeddings.pkl", "rb") as f:
     catalog = pickle.load(f)
@@ -31,6 +33,7 @@ for item in catalog["metadata"]:
     low, high = PRICE_RANGES.get(item["category"], DEFAULT_RANGE)
     item["price"] = round(float(np.random.uniform(low, high)), 2)
 
+# Save the updated catalog with prices back to a new pickle file
 with open("output/catalog_embeddings_with_prices.pkl", "wb") as f:
     pickle.dump(catalog, f)
 
