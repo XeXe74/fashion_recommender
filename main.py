@@ -58,7 +58,7 @@ def main():
 
     # Default input if the user does not provide any constraints
     if not user_input:
-        user_input = "menos de 150 euros"
+        user_input = "under 150 euros"
 
     # Detect clothing items and crop them
     print("\n[1/5] Detecting clothes...")

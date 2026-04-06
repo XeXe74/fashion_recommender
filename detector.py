@@ -55,6 +55,9 @@ def detect_and_crop(image_path, output_folder="data/output/crops"):
 
         print(f"Detected: {label} ({confidence:.0%}) -> saved at {crop_path}")
 
+    if os.path.exists(safe_path):
+        os.remove(safe_path)
+
     print(f"\nTotal clothing items detected: {len(crops)}")
     return crops
 
