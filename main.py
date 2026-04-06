@@ -1,12 +1,12 @@
 from detector import detect_and_crop
 from embedder import recommend as embed_recommend
-from recommender import recommend_outfits
+from recommender import recommend_outfits, parse_user_input
 from visualizer import build_index, visualize_outfits
 from datasets import load_from_disk
 import recommender
 
 DATASET_PATH = "data/polyvore_outfits/data"
-INPUT_IMAGE   = "data/input_outfits/outfit_2.jpg"
+INPUT_IMAGE   = "data/input_outfits/outfit_3.jpg"
 TOP_K_OUTFITS    = 3
 
 # Hyperparameter search space
@@ -19,6 +19,9 @@ def hyperparameter_search(crops, user_input=""):
     best_alpha = 0.7
     best_top_k = 20
 
+    constraints = parse_user_input(user_input)
+    keywords_only = constraints.get("keywords", "")  # ← solo esto
+
     print(f"  Testing {len(ALPHAS) * len(TOP_KS)} combinations...")
     for alpha in ALPHAS:
         for top_k in TOP_KS:
@@ -29,7 +32,7 @@ def hyperparameter_search(crops, user_input=""):
                     candidates[crop["label"]] = c
 
             recommender.ALPHA = alpha
-            outfits = recommend_outfits(candidates, user_input=user_input, top_k=TOP_K_OUTFITS)
+            outfits = recommend_outfits(candidates, user_input=keywords_only, top_k=TOP_K_OUTFITS)
 
             scores = [item["final_score"]
                       for o in outfits
@@ -51,7 +54,7 @@ def main():
     print("=" * 50)
 
     # Get user constraints
-    user_input = input("\nEnter your constraints (e.g. 'menos de 150 euros knit oversized'): ").strip()
+    user_input = input("\nEnter your constraints (e.g. 'under 150 euros knit oversized'): ").strip()
 
     # Default input if the user does not provide any constraints
     if not user_input:

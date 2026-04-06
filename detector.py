@@ -12,6 +12,15 @@ def detect_and_crop(image_path, output_folder="data/output/crops"):
     # Ensure the output directory exists
     os.makedirs(output_folder, exist_ok=True)
 
+    # Convert to RGB to avoid issues with YOLO
+    try:
+        safe_path = os.path.splitext(image_path)[0] + "_safe.jpg"
+        Image.open(image_path).convert("RGB").save(safe_path)
+        image_path = safe_path
+    except Exception as e:
+        print(f"Error loading image: {e}")
+        return []
+
     # Load the image and run detection
     image = Image.open(image_path)
     results = model(image_path)
