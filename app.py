@@ -44,7 +44,6 @@ def run_pipeline(pil_image, user_input):
         # Loop for all combinations of alpha and top_k to find the best config based on average final_score of recommended outfits
         for alpha in ALPHAS:
             for top_k in TOP_KS:
-                print(f"  Testing alpha={alpha}, top_k={top_k}...")
                 candidates = {}
                 for crop in crops:
                     c = embed_recommend(crop["path"], class_name=crop["label"], top_k=top_k)
@@ -56,6 +55,8 @@ def run_pipeline(pil_image, user_input):
                 outfits = recommend_outfits(candidates, user_input=keywords_only, top_k=TOP_K_OUTFITS)
                 scores = [item["final_score"] for o in outfits for item in o["items"].values()]
                 score = sum(scores) / len(scores) if scores else 0
+
+                print(f"    alpha={alpha}, top_k={top_k} -> score={score:.4f}", flush=True)
 
                 # If this config is better than the best one so far, update the best config
                 if score > best_score:
@@ -110,7 +111,7 @@ with gr.Blocks(title="Fashion Recommender", theme=gr.themes.Soft()) as demo:
                 label="Constraints (optional)",
                 placeholder="e.g. under 100 euros casual"
             )
-            submit_btn   = gr.Button("🔍 Find similar items", variant="primary")
+            submit_btn = gr.Button("🔍 Find similar items", variant="primary")
 
         with gr.Column(scale=2):
             gallery = gr.Gallery(label="Recommended items", columns=3, height=520, object_fit="cover")
