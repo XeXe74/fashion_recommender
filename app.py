@@ -21,11 +21,19 @@ index = build_index(ds)
 print("Ready!")
 
 def score_bar(score, length=20):
+    """
+    Function to represent score bars in the app.
+    """
     filled = int(round(score * length))
     empty = length - filled
     return "█" * filled + "░" * empty
 
 def run_pipeline(pil_image, user_input):
+    """
+    Run the full pipeline: detect garments, recommend items, and prepare outputs for the UI.
+    """
+
+    # Validate input image
     if pil_image is None:
         return [], "Please upload an image first."
 
@@ -51,10 +59,10 @@ def run_pipeline(pil_image, user_input):
             for top_k in TOP_KS:
                 candidates = {}
                 for crop in crops:
-                    c = embed_recommend(crop["path"], class_name=crop["label"], top_k=top_k)
+                    c = embed_recommend(crop["path"], class_name=crop["label"], top_k=top_k) # Get candidates for this crop with the current top_k
                     if c:
                         candidates[crop["label"]] = c
-                recommender_module.ALPHA = alpha
+                recommender_module.ALPHA = alpha # Set the current alpha in the recommender module
 
                 # Get outfits with the current config and calculate the average final_score across all items in the recommended outfits
                 outfits = recommend_outfits(candidates, user_input=keywords_only, top_k=TOP_K_OUTFITS)
@@ -120,14 +128,15 @@ with gr.Blocks(title="Fashion Recommender", theme=gr.themes.Soft()) as demo:
     gr.Markdown("# 👗 Visual Fashion Recommender")
     gr.Markdown("Upload an outfit photo and optionally add constraints. The system detects each garment and recommends similar items.")
 
+    # Input section on the left, results on the right
     with gr.Row():
         with gr.Column(scale=1):
-            input_image = gr.Image(type="pil", label="Outfit photo", sources=["upload", "clipboard"])
+            input_image = gr.Image(type="pil", label="Outfit photo", sources=["upload", "clipboard"]) # Allow both upload and paste from clipboard for convenience
             user_input = gr.Textbox(
                 label="Constraints (optional)",
                 placeholder="e.g. under 100 euros casual"
             )
-            submit_btn = gr.Button("🔍 Find similar items", variant="primary")
+            submit_btn = gr.Button("🔍 Find similar items", variant="primary") # Trigger the recommendation pipeline
 
         with gr.Column(scale=2):
             # Three separate galleries, one per outfit, ordered by score
@@ -137,6 +146,7 @@ with gr.Blocks(title="Fashion Recommender", theme=gr.themes.Soft()) as demo:
                 gallery3 = gr.Gallery(label="🥉 Outfit 3", columns=1, height=400, object_fit="cover")
             summary_text = gr.Markdown()
 
+    # When the submit button is clicked, run the pipeline and update the galleries and summary text with the results
     submit_btn.click(
         fn=run_pipeline,
         inputs=[input_image, user_input],

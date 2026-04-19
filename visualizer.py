@@ -5,38 +5,52 @@ import textwrap
 DATASET_PATH = "data/polyvore_outfits/data"
 
 def build_index(ds):
+    """
+    Build a mapping from item_ID to dataset index for quick access.
+    """
     print("Building item_ID index...")
     index = {ds[i]["item_ID"]: i for i in range(len(ds))}
     print(f"Index built: {len(index)} entries")
     return index
 
 def get_image(ds, index, item_id):
+    """
+    Retrieve the image for a given item_ID using the index.
+    """
     idx = index.get(item_id)
     if idx is None:
         return None
     return ds[idx]["image"]
 
 def visualize_outfits(outfits, ds, index):
+    """
+    Visualize the recommended outfits in a grid format with item details and scores.
+    """
     n_outfits = len(outfits)
     n_items = max(len(o["items"]) for o in outfits)
 
+    # Create a grid of subplots for the outfits and their items
     fig, axes = plt.subplots(n_outfits, n_items, figsize=(n_items * 4, n_outfits * 5))
 
+    # Handle cases where there's only one outfit or one item to ensure axes is always a 2D list
     if n_outfits == 1:
         axes = [axes]
     if n_items == 1:
         axes = [[ax] for ax in axes]
 
+    # Loop through each outfit and its items to populate the grid
     for i, outfit in enumerate(outfits):
         for j, (class_name, item) in enumerate(outfit["items"].items()):
             ax = axes[i][j]
             img = get_image(ds, index, item["item_ID"])
 
+            # Display the image if available, otherwise show a placeholder text
             if img:
                 ax.imshow(img)
             else:
                 ax.text(0.5, 0.5, "No image", ha="center", va="center", transform=ax.transAxes)
 
+            # Wrap the item text to fit within the title area
             name = textwrap.fill(item["text"], width=22)
             ax.set_title(
                 f"{class_name}\n{item['category']} - {name}\n"
@@ -45,34 +59,41 @@ def visualize_outfits(outfits, ds, index):
             )
             ax.axis("off")
 
+        # Hide any unused subplots in the grid
         for j in range(len(outfit["items"]), n_items):
             axes[i][j].axis("off")
 
+        # Add a label on the left side of the outfit with its score and total price
         axes[i][0].set_ylabel(
             f"Outfit {i+1}\nScore: {outfit['outfit_score']:.3f}\nTotal: {outfit['total_price']:.2f}€",
             fontsize=9, rotation=0, labelpad=130, va="center"
         )
 
+    # Add a main title for the entire figure and adjust layout
     plt.suptitle("Fashion Recommendations", fontsize=14, fontweight="bold", y=1.01)
     plt.tight_layout()
     plt.savefig("output/recommendations.png", bbox_inches="tight", dpi=150)
     plt.show()
     print("Saved to output/recommendations.png")
 
-
+# TEST
 if __name__ == "__main__":
     from embedder import recommend as embed_recommend
     from recommender import recommend_outfits
 
+    # Load the dataset and build the index for item_ID to dataset index mapping
     ds = load_from_disk(DATASET_PATH)
     index = build_index(ds)
 
+    # Example user input for constraints
     user_input = "menos de 150 euros knit oversized"
 
+    # Get top-20 visual candidates per detected garment (using hardcoded crop paths and class names for this example)
     all_candidates = {
         "trousers": embed_recommend("data/output/crops/crop_0_trousers.jpg", class_name="trousers", top_k=20),
         "long_sleeved_shirt": embed_recommend("data/output/crops/crop_1_long_sleeved_shirt.jpg", class_name="long_sleeved_shirt", top_k=20),
     }
 
+    # Recommend outfits based on visual similarity and user constraints
     outfits = recommend_outfits(all_candidates, user_input=user_input, top_k=3)
     visualize_outfits(outfits, ds, index)

@@ -6,8 +6,8 @@ from datasets import load_from_disk
 import recommender
 
 DATASET_PATH = "data/polyvore_outfits/data"
-INPUT_IMAGE   = "data/input_outfits/outfit_3.jpg"
-TOP_K_OUTFITS    = 3
+INPUT_IMAGE = "data/input_outfits/outfit_3.jpg"
+TOP_K_OUTFITS = 3
 
 # Hyperparameter search space
 ALPHAS = [0.3, 0.5, 0.7, 1.0]

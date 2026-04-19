@@ -55,6 +55,7 @@ def detect_and_crop(image_path, output_folder="data/output/crops"):
 
         print(f"Detected: {label} ({confidence:.0%}) -> saved at {crop_path}")
 
+    # Clean up the temporary safe image if it was created
     if os.path.exists(safe_path):
         os.remove(safe_path)
 

@@ -99,11 +99,12 @@ def recommend_outfits(all_candidates: dict, user_input: str = "", top_k: int = 3
     candidate_lists = [scored[cn] for cn in class_names]
 
     valid_outfits = []
+    # Check all combinations of candidates across classes and filter by price
     for combo in product(*candidate_lists):
         total_price = sum(c["price"] for c in combo)
         if min_price <= total_price <= max_price:
-            outfit_score = float(np.mean([c["final_score"] for c in combo]))
-            valid_outfits.append({
+            outfit_score = float(np.mean([c["final_score"] for c in combo])) # Average score of items in the outfit
+            valid_outfits.append({ # Build the outfit dict with items, total price, and outfit score
                 "items": {class_names[i]: combo[i] for i in range(len(class_names))},
                 "total_price": round(total_price, 2),
                 "outfit_score": outfit_score
@@ -114,6 +115,8 @@ def recommend_outfits(all_candidates: dict, user_input: str = "", top_k: int = 3
 
     if not valid_outfits:
         print("  [Warning] No outfits found within budget. Returning best options ignoring price.")
+
+        # If no valid outfits within budget, return top combinations by score regardless of price
         for combo in product(*candidate_lists):
             total_price = sum(c["price"] for c in combo)
             outfit_score = float(np.mean([c["final_score"] for c in combo]))
@@ -122,8 +125,9 @@ def recommend_outfits(all_candidates: dict, user_input: str = "", top_k: int = 3
                 "total_price": round(total_price, 2),
                 "outfit_score": outfit_score
             })
-        valid_outfits.sort(key=lambda x: x["outfit_score"], reverse=True)
+        valid_outfits.sort(key=lambda x: x["outfit_score"], reverse=True) # Sort again by score
 
+    # To ensure diversity, we can filter the top outfits to avoid repeating the same items across them
     seen_ids = set()
     diverse_outfits = []
     for outfit in valid_outfits:
@@ -140,6 +144,7 @@ def recommend_outfits(all_candidates: dict, user_input: str = "", top_k: int = 3
 if __name__ == "__main__":
     from embedder import recommend as embed_recommend
 
+    # Example usage
     user_input = "menos de 150 euros knit oversized"
 
     # Get top-20 visual candidates per detected garment
@@ -148,8 +153,10 @@ if __name__ == "__main__":
         "long_sleeved_shirt": embed_recommend("data/output/crops/crop_1_long_sleeved_shirt.jpg", class_name="long_sleeved_shirt", top_k=20),
     }
 
+    # Recommend outfits based on visual similarity and user constraints
     outfits = recommend_outfits(all_candidates, user_input=user_input, top_k=3)
 
+    # Print the recommended outfits with their scores and total price
     for i, outfit in enumerate(outfits):
         print(f"\n--- Outfit {i+1} | Score: {outfit['outfit_score']:.3f} | Total: {outfit['total_price']:.2f}€ ---")
         for class_name, item in outfit["items"].items():
