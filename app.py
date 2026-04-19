@@ -77,15 +77,19 @@ def run_pipeline(pil_image, user_input):
         # Recommend outfits
         outfits = recommend_outfits(all_candidates, user_input=user_input, top_k=TOP_K_OUTFITS)
         if not outfits:
-            return [], "No outfits found matching your constraints."
+            return [], [], [], "No outfits found matching your constraints."
 
-        # Get the images and captions for the gallery, and prepare the summary text
-        gallery_images = []
+        # Sort outfits by their outfit_score in descending order
+        outfits_sorted = sorted(outfits, key=lambda o: o["outfit_score"], reverse=True)
+
+        # Build one gallery per outfit (up to 3) and prepare the summary text
         medals = ["🥇", "🥈", "🥉"]
+        galleries = [[], [], []]
         summary_lines = [f"**Best config:** α={best_alpha}, top_k={best_top_k}, score={best_score:.3f}\n"]
 
-        for i, outfit in enumerate(outfits):
-            medal = medals[i] if i < 3 else f"#{i + 1}"
+        # For each of the top 3 outfits, add a section to the summary and populate the corresponding gallery with images and captions
+        for i, outfit in enumerate(outfits_sorted[:3]):
+            medal = medals[i]
             bar = score_bar(outfit['outfit_score'])
             summary_lines.append(f"### {medal} Outfit {i + 1}")
             summary_lines.append(
@@ -93,16 +97,18 @@ def run_pipeline(pil_image, user_input):
             summary_lines.append("")
             summary_lines.append("| Garment | Item | Price |")
             summary_lines.append("|---------|------|-------|")
+
             for class_name, item in outfit["items"].items():
-                img = get_image(ds, index, item["item_ID"])
-                caption = f"{class_name} · {item['category']}\n{item['text'][:40]} | {item['price']:.2f}€"
+                img = get_image(ds, index, item["item_ID"]) # Get the image for this item from the dataset
+                caption = f"{class_name} · {item['category']}\n{item['text'][:40]} | {item['price']:.2f}€" # Caption with class, category, truncated text and price
+                # Each outfit goes into its own gallery column
                 if img:
-                    gallery_images.append((img, caption))
+                    galleries[i].append((img, caption))
                 name = item['text'][:50] + ("…" if len(item['text']) > 50 else "")
                 summary_lines.append(f"| `{class_name}` | {name} | `{item['price']:.2f}€` |")
             summary_lines.append("\n---")
 
-        return gallery_images, "\n".join(summary_lines)
+        return galleries[0], galleries[1], galleries[2], "\n".join(summary_lines) # Return the three galleries and the summary text to be displayed in the UI
 
     finally:
         os.unlink(tmp_path)  # Cleanup temporary file
@@ -123,13 +129,17 @@ with gr.Blocks(title="Fashion Recommender", theme=gr.themes.Soft()) as demo:
             submit_btn = gr.Button("🔍 Find similar items", variant="primary")
 
         with gr.Column(scale=2):
-            gallery = gr.Gallery(label="Recommended items", columns=3, height=520, object_fit="cover")
+            # Three separate galleries, one per outfit, ordered by score
+            with gr.Row():
+                gallery1 = gr.Gallery(label="🥇 Outfit 1", columns=1, height=400, object_fit="cover")
+                gallery2 = gr.Gallery(label="🥈 Outfit 2", columns=1, height=400, object_fit="cover")
+                gallery3 = gr.Gallery(label="🥉 Outfit 3", columns=1, height=400, object_fit="cover")
             summary_text = gr.Markdown()
 
     submit_btn.click(
         fn=run_pipeline,
         inputs=[input_image, user_input],
-        outputs=[gallery, summary_text]
+        outputs=[gallery1, gallery2, gallery3, summary_text]
     )
 
 if __name__ == "__main__":
