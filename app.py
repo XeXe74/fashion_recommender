@@ -20,6 +20,10 @@ ds = load_from_disk(DATASET_PATH)
 index = build_index(ds)
 print("Ready!")
 
+def score_bar(score, length=20):
+    filled = int(round(score * length))
+    return "█" * filled
+
 def run_pipeline(pil_image, user_input):
     if pil_image is None:
         return [], "Please upload an image first."
@@ -77,21 +81,26 @@ def run_pipeline(pil_image, user_input):
 
         # Get the images and captions for the gallery, and prepare the summary text
         gallery_images = []
-        summary_lines  = [f"**Best config:** α={best_alpha}, top_k={best_top_k}, score={best_score:.3f}\n"]
+        medals = ["🥇", "🥈", "🥉"]
+        summary_lines = [f"**Best config:** α={best_alpha}, top_k={best_top_k}, score={best_score:.3f}\n"]
 
-        # Build the gallery and summary text for each recommended outfit
         for i, outfit in enumerate(outfits):
+            medal = medals[i] if i < 3 else f"#{i + 1}"
+            bar = score_bar(outfit['outfit_score'])
+            summary_lines.append(f"### {medal} Outfit {i + 1}")
             summary_lines.append(
-                f"**Outfit {i+1}** | Score: {outfit['outfit_score']:.3f} | Total: {outfit['total_price']:.2f}€"
-            )
-            # For each item in the outfit, get its image and prepare a caption with class name, category, truncated text, and price
+                f"**Score:** `{bar}` {outfit['outfit_score']:.3f} &nbsp; **Total:** `{outfit['total_price']:.2f}€`")
+            summary_lines.append("")
+            summary_lines.append("| Garment | Item | Price |")
+            summary_lines.append("|---------|------|-------|")
             for class_name, item in outfit["items"].items():
                 img = get_image(ds, index, item["item_ID"])
                 caption = f"{class_name} · {item['category']}\n{item['text'][:40]} | {item['price']:.2f}€"
                 if img:
                     gallery_images.append((img, caption))
-                summary_lines.append(f"  - {class_name}: {item['text'][:50]} | {item['price']:.2f}€")
-            summary_lines.append("")  # Separate outfits with a blank line
+                name = item['text'][:50] + ("…" if len(item['text']) > 50 else "")
+                summary_lines.append(f"| `{class_name}` | {name} | `{item['price']:.2f}€` |")
+            summary_lines.append("\n---")
 
         return gallery_images, "\n".join(summary_lines)
 
