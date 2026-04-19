@@ -22,7 +22,8 @@ print("Ready!")
 
 def score_bar(score, length=20):
     filled = int(round(score * length))
-    return "█" * filled
+    empty = length - filled
+    return "█" * filled + "░" * empty
 
 def run_pipeline(pil_image, user_input):
     if pil_image is None:
