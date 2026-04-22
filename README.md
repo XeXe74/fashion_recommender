@@ -5,17 +5,17 @@ Final Project Intelligent Systems Engineering, 2026
 This project implements a complete fashion recommendation system that takes an outfit photo as input, detects individual clothes using Yolov8 and recommends visually similar items from a fashion dataset using embedding with OpenAI's CLIP model and Information Retrieval techniques.
 
 ### Key Components:
-- **Cloth Detection with Yolov8:** Yolov8 fine-tuned in fashion data is used to detect and crop the clothing items from the input photo, also providing confidence scores.
+- **Cloth Detection with Yolov8:** Yolov8 fine-tuned on fashion data is used to detect and crop the clothing items from the input photo, also providing confidence scores.
 - **Deep Visual Embeddings with CLIP:** OpenAI's CLIP model is used to generate deep visual embeddings for both the detected clothing items and the fashion dataset, enabling semantic similarity comparisons.
-- **Constraint Satisfaction Problem (CSP) Formulation:** Supports natural language constraints provided by prompts where the user can specify budget and style. There are two type of constraints: hard constraints like budget and soft constraints penalized by TF-IDF scoring like style.
-- **Hyperparameter Optimization:** Dynamically searches the best combination of hyperparameters to maximize the final results. In this case, the hyperparameters are the visual vs textual weight and the top k candidates.
+- **Constraint Satisfaction Problem (CSP) Formulation:** Supports natural language constraints provided by prompts where the user can specify budget and style. There are two types of constraints: hard constraints like budget and soft constraints penalized by TF-IDF scoring like style.
+- **Hybrid Scoring Mechanism:** Uses a calibrated weighting factor (α = 0.7) to effectively balance the visual similarity from the input image with the textual relevance from the user's prompt, guaranteeing true multimodal behavior.
 - **Interactive Web Interface:** Built with Gradio to provide an intuitive and easy-to-use interface where the user can upload photos, type prompts and see the recommended outfits alongside its scores.
 
 ### Project Pipeline:
 The core pipeline consists of the following steps:
 1. **Cloth Detection (detector.py):** The input outfit photo is processed through the Yolov8 model which separates all detected clothes and represents bounding boxes with a confidence score above 0.4 that are cropped and saved for later usage.
 2. **Embedding Generation (embedder.py):** Each crop is passed through the CLIP model to get the embedding vector which contains the visual features of the clothing and then is compared against the Polyvore dataset's pre-computed embeddings using the cosine similarity to retrieve the top candidates.
-3. **Scoring and Combinations (recommender.py):** Candidates are scored through a weighted formula: `Score = α * visual_score + (1-α) * text_score`. The application evaluates different alpha and top_k values to find the best hyperparameter combination to achieve the best possible results. Then, it generates valid outfit combinations that respects the maximum or minimum budget specified by the user.
+3. **Scoring and Combinations (recommender.py):** Candidates are scored through a weighted formula: `Score = α * visual_score + (1-α) * text_score`. A fixed weighting factor of α = 0.7 is applied to guarantee a robust balance between the visual anchor and the textual constraints. Then, the system formulates a CSP to generate valid outfit combinations that strictly respect the maximum or minimum budget specified by the user.
 4. **Visualization (app.py/visualizer.py):** The top 3 outfit combinations are sorted by their final score and displayed to the user with the final score, full price and individual cloth prices through a Gradio interface or through terminal depending on the executed file.
 
 ## Project Structure
